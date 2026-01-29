@@ -1,58 +1,47 @@
-# 📁 app/descricoes
+# 📝 Descrições de Cargos
 
-## Descrição
-Módulo de **Descrições de Cargos** do sistema PCCS. Permite gerenciar documentos detalhados de cada cargo.
-
-## Estrutura
-
-```
-/descricoes
-├── page.tsx              # Lista de todos os cargos com status das descrições
-└── [id]/
-    └── page.tsx          # Visualização/Edição da descrição de um cargo
-```
-
-## Funcionalidades
-
-### Lista de Cargos (`/descricoes`)
-- **Cards de estatísticas**: Total, Aprovados, Em Revisão, Sem Descrição
-- **Filtros**: Busca por título/departamento, Filtro por status
-- **Agrupamento**: Por departamento
-- **Indicadores**: Barra de completude (%), Status visual
-- **Ações**: 
-  - "Gerar Descrição" (cria template automático)
-  - "Visualizar" (abre editor)
-
-### Editor de Descrição (`/descricoes/[id]`)
-- **Cabeçalho Premium**: Gradiente escuro, info do cargo, status
-- **Seções Colapsáveis**:
-  1. Sumário e Objetivo
-  2. Requisitos e Competências
-  3. Responsabilidades e Atividades
-  4. Contexto Organizacional
-  5. Condições de Trabalho
-- **Workflow de Aprovação**: DRAFT → REVIEW → APPROVED
-- **Versioning**: Controle de versão automático
-- **Impressão**: Suporte a print CSS
-
-## Status das Descrições
-
-| Status | Descrição |
-|--------|-----------|
-| EMPTY | Cargo sem descrição cadastrada |
-| DRAFT | Rascunho em edição |
-| REVIEW | Enviado para revisão |
-| APPROVED | Aprovado oficialmente |
-
-## APIs Consumidas
-- `getJobDescriptionsList()` - Lista resumida
-- `getJobDescriptionsStats()` - Estatísticas gerais
-- `getJobDescription(jobRoleId)` - Descrição completa
-- `saveJobDescription(jobRoleId, data)` - Salvar/atualizar
-- `updateDescriptionStatus(jobRoleId, status)` - Workflow
-- `generateDescriptionTemplate(jobRoleId)` - Template automático
+Módulo de gestão das fhas descritivas de cada cargo da organização.
 
 ---
 
-## Última Atualização
-**2026-01-28** - Criação do módulo de Descrições de Cargos
+## 📋 Visão Geral
+
+A descrição de cargos é o documento fundamental que detalha as responsabilidades, requisitos e competências de cada posição, servindo como base para recrutamento, treinamento e avaliação.
+
+---
+
+## ⚙️ Funcionalidades
+
+- 📋 **Lista de Descrições**: Visualização centralizada de todos os cargos com status de descrição.
+- ✏️ **Editor Rico**: Interface para redigir missão, responsabilidades e requisitos.
+- 📄 **Templates**: Padronização visual para todas as descrições.
+- 🔍 **Busca e Filtros**: Localização rápida por departamento ou nível.
+
+---
+
+## 🧱 Estrutura da Descrição
+
+| Campo | Descrição |
+|-------|-----------|
+| **Missão do Cargo** | O propósito fundamental da existência da posição. |
+| **Responsabilidades** | Lista de atividades e deveres principais. |
+| **Requisitos Técnicos** | Formação acadêmica, cursos e conhecimentos específicos. |
+| **Experiência** | Tempo e vivência profissional necessários. |
+| **Competências** | Atitudes e comportamentos esperados (soft skills). |
+
+---
+
+## 📁 Arquivos
+
+| Arquivo | Descrição |
+|---------|-----------|
+| `/app/descricoes/page.tsx` | Lista geral de descrições |
+| `/app/descricoes/[id]/page.tsx` | Editor/Visualizador de uma descrição específica |
+| `/app/actions/job-descriptions.ts` | Server Actions para CRUD de descrições |
+| `/components/job-descriptions/` | Componentes de editor e listagem |
+
+---
+
+## 🔄 Última Atualização
+
+**2026-01-29** - Documentação do módulo de descrições.

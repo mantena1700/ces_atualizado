@@ -1,49 +1,45 @@
-# 📁 app/orcamento
+# 💰 Gestão de Orçamento
 
-## Descrição
-Módulo de **Gestão Orçamentária** do sistema PCCS. Permite criar, gerenciar e acompanhar planos orçamentários de pessoal.
+Módulo de planejamento e controle orçamentário da folha de pagamento.
 
-## Estrutura
+---
 
-```
-/orcamento
-├── page.tsx           # Página principal com Tabs (Planos | Tempo Real)
-└── /plano
-    └── /[id]
-        └── page.tsx   # Página de detalhes de um plano específico
-```
+## 📋 Visão Geral
 
-## Funcionalidades
+Este módulo permite simular e gerenciar o impacto financeiro das movimentações salariais, garantindo a saúde financeira da empresa durante a implementação e manutenção do PCCS.
 
-### Aba "Planos Orçamentários"
-- **Criar Plano**: Novo plano (Anual, Semestral, Trimestral ou Mensal)
-- **Visualizar**: Cards com resumo de cada plano (orçamento total, headcount)
-- **Duplicar**: Copiar plano para próximo período
-- **Excluir**: Remover plano
+---
 
-### Aba "Visão em Tempo Real"
-- Dashboard com custo real por departamento (baseado na folha ativa)
-- Barras de progresso de utilização
+## ⚙️ Funcionalidades
 
-### Página de Detalhes (`/plano/[id]`)
-- **Comparativo**: Planejado vs Realizado por departamento
-- **KPIs**: Orçamento, Executado, Variância, Headcount
-- **Adicionar/Editar**: Departamentos ao plano
-- **Status**: Rascunho → Aprovado → Encerrado
+- 📈 **Planos Orçamentários**: Criação de múltiplos cenários (Conservador, Moderado, Agressivo).
+- 📊 **Análise por Departamento**: Distribuição de custos por centros de custo.
+- 📉 **Real vs. Orçado**: Acompanhamento em tempo real da execução orçamentária.
+- 🌓 **Headcount**: Gestão do quadro de pessoal planejado vs. atual.
 
-## APIs Consumidas
-- `getBudgetPlans()` - Lista planos
-- `getBudgetPlanDetails(id)` - Detalhes com comparativo
-- `createBudgetPlan()` - Criar plano
-- `upsertBudgetPlanItem()` - Adicionar/editar item
-- `deleteBudgetPlan()` - Excluir plano
-- `duplicateBudgetPlan()` - Duplicar plano
-- `getBudgetOverview()` - Visão tempo real
+---
 
-## Componentes Utilizados
-- `BudgetPlanList` - Lista de planos em cards
-- `BudgetPlanDetail` - Detalhes do plano com tabela comparativa
-- `BudgetView` - Dashboard de tempo real
+## 📁 Estrutura de Dados (BudgetPlan)
 
-## Última Atualização
-**2026-01-28** - Criação do módulo completo de planejamento orçamentário
+| Campo | Descrição |
+|-------|-----------|
+| **Planned Budget** | Valor total destinado à folha de pagamento. |
+| **Planned Headcount** | Número de colaboradores previsto. |
+| **Impact Analysis** | Estimativa de custo para progressões previstas. |
+
+---
+
+## 📁 Arquivos
+
+| Arquivo | Descrição |
+|---------|-----------|
+| `/app/orcamento/page.tsx` | Dashboard orçamentário e lista de planos |
+| `/app/orcamento/plano/[id]/page.tsx` | Detalhamento de um plano específico |
+| `/app/actions/budget.ts` | Server Actions de gestão orçamentária |
+| `/components/budget/` | Componentes de gráficos e formulários de orçamento |
+
+---
+
+## 🔄 Última Atualização
+
+**2026-01-29** - Documentação do módulo de orçamento.

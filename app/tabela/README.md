@@ -1,18 +1,32 @@
-# Módulo de Tabela Salarial Oficial
+# 📋 Tabela Salarial Oficial
 
-Enquanto a Matriz Salarial foca no cálculo técnico da engenharia de cargos, a **Tabela Salarial** é o documento de saída destinado à consulta de gestores e diretoria.
+Consulta rápida das faixas salariais vigentes da organização.
 
-## Propósito
-Exibir as faixas remuneratórias reais para cada cargo oficial da empresa, vinculando a complexidade (pontos) ao valor monetário (R$).
+---
 
-## Elementos de Análise
-- **Cargo e Departamento**: Identificação clara da função.
-- **Pontuação (Pontos Hay)**: Justificativa técnica do posicionamento do cargo na estrutura.
-- **Grade Salarial**: Nível hierárquico vinculado à Matriz Salarial.
-- **Piso (Step A)**: Salário inicial de entrada.
-- **Midpoint (Alvo)**: Referência de mercado (valor "alvo" para um colaborador maduro no cargo).
-- **Teto (Step Final)**: Valor máximo possível para aquela função dentro do plano.
-- **Amplitude (Spread)**: Percentagem de evolução possível dentro do mesmo cargo.
+## 📋 Visão Geral
 
-## Integração
-- Este módulo consome dados da **Matriz Salarial** e da **Avaliação de Cargos**. Qualquer alteração na pontuação do cargo ou nos valores das grades é refletida instantaneamente nesta tabela.
+Este módulo oferece uma visão simplificada e oficial da remuneração, permitindo que gestores e RH consultem rapidamente qual a faixa salarial de cada grade na organização.
+
+---
+
+## ⚙️ Funcionalidades
+
+- 🔍 **Consulta Simplificas**: Foco nos valores finais por Grade e Step.
+- 📊 **Visualização de Faixas**: Mostra claramente o Mínimo, Médio e Máximo de cada nível.
+- 🎨 **Status de Vigência**: Indicação se a tabela visualizada é a oficial aprovada.
+
+---
+
+## 📁 Arquivos
+
+| Arquivo | Descrição |
+|---------|-----------|
+| `/app/tabela/page.tsx` | Visualização da tabela salarial oficial |
+| `/app/actions/salary.ts` | Server Action que busca a grade vigente |
+
+---
+
+## 🔄 Última Atualização
+
+**2026-01-29** - Documentação do módulo de tabela salarial.

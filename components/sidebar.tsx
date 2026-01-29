@@ -28,58 +28,63 @@ import {
     Target
 } from 'lucide-react';
 
-// Estrutura do Menu Agrupada
+// Estrutura do Menu Reorganizada (Fluxo Lógico PCCS)
 const menuStructure = [
     {
         section: 'Dashboard',
         href: '/',
         icon: LayoutDashboard,
-        label: 'Dashboard'
+        label: 'Visão Geral'
     },
     {
-        section: 'Estrutura Organizacional',
+        section: 'Estrutura & Pessoas',
         icon: Building2,
         items: [
             { href: '/organograma', icon: Network, label: 'Organograma' },
             { href: '/colaboradores', icon: Users, label: 'Colaboradores' },
-            { href: '/importar', icon: Import, label: 'Importar Eqp.' },
+            { href: '/importar', icon: Import, label: 'Importação de Dados' },
         ]
     },
     {
-        section: 'Gestão de Cargos',
+        section: 'Cargos & Competências',
         icon: Briefcase,
         items: [
-            { href: '/cargos', icon: Target, label: 'Cargos e Avaliação' },
-            { href: '/avaliacao', icon: PieChart, label: 'Avaliação de Desempenho' },
+            { href: '/cargos', icon: Target, label: 'Avaliação de Cargos' },
             { href: '/descricoes', icon: ClipboardList, label: 'Descrições de Cargos' },
             { href: '/competencias', icon: Brain, label: 'Matriz de Competências' },
-            { href: '/carreira', icon: TrendingUp, label: 'Grafo de Carreira' },
+            { href: '/carreira', icon: TrendingUp, label: 'Trilhas de Carreira' },
         ]
     },
     {
-        section: 'Remuneração & Folha',
+        section: 'Remuneração',
         icon: Wallet,
         items: [
             { href: '/matriz', icon: Calculator, label: 'Matriz Salarial' },
-            { href: '/tabela', icon: Table, label: 'Tabela Salarial' },
-            { href: '/orcamento', icon: PieChart, label: 'Gestão de Orçamento' },
-            { href: '/simulacoes', icon: FileText, label: 'Simulações' },
+            { href: '/tabela', icon: Table, label: 'Tabela Oficial' },
+            { href: '/orcamento', icon: PieChart, label: 'Orçamento' },
+            { href: '/simulacoes', icon: FileText, label: 'Simulações de Impacto' },
         ]
     },
     {
-        section: 'Planejamento & Políticas',
+        section: 'Avaliação de Desempenho',
+        href: '/avaliacao',
+        icon: Target,
+        label: 'Avaliação de Desempenho'
+    },
+    {
+        section: 'Documentação Oficial',
         icon: BookOpen,
         items: [
-            { href: '/manual', icon: Book, label: 'Manual Completo' },
-            { href: '/politica', icon: FileText, label: 'Anexos da Política' },
-            { href: '/cronograma', icon: Clock, label: 'Cronograma' },
+            { href: '/manual', icon: Book, label: 'Manual de Cargos e Salários' },
+            { href: '/politica', icon: FileText, label: 'Política e Anexos' },
+            { href: '/cronograma', icon: Clock, label: 'Cronograma de Implementação' },
         ]
     },
     {
-        section: 'Sistema',
+        section: 'Configurações',
         href: '/configuracoes',
         icon: Settings,
-        label: 'Configurações'
+        label: 'Configurações do Sistema'
     }
 ];
 
@@ -87,7 +92,7 @@ export function Sidebar() {
     const pathname = usePathname();
     // Estado para controlar quais grupos estão abertos
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
-        'Gestão de Cargos': true // Padrão aberto
+        'Cargos & Competências': true // Padrão aberto
     });
 
     // Efeito para abrir automaticamente o grupo do item ativo

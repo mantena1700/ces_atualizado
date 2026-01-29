@@ -1,38 +1,43 @@
-# 📁 app/organograma
+# 🌿 Organograma
 
-## Descrição
-Módulo de **Organograma Integrado** do sistema PCCS. Exibe a hierarquia organizacional de forma visual e interativa.
+Visualização hierárquica e funcional da estrutura organizacional.
 
-## Estrutura
+---
 
-```
-/organograma
-└── page.tsx           # Página principal com visualização do organograma
-```
+## 📋 Visão Geral
 
-## Funcionalidades
+O organograma interativo permite navegar pela estrutura da empresa, compreendendo as linhas de subordinação, departamentos e a distribuição de cargos e pessoas.
 
-- **Visualização Hierárquica**: Árvore de cargos baseada no campo `reportsToId`
-- **Layout Automático**: Algoritmo DFS para posicionar nós automaticamente
-- **Interação**: Zoom, pan, minimap
-- **Conexão Drag & Drop**: Arraste linhas entre cargos para definir hierarquia
-- **Informações por Nó**:
-  - Título do cargo
-  - Departamento
-  - Lista de ocupantes (funcionários)
-  - Headcount
+---
 
-## APIs Consumidas
-- `getOrgChartData()` - Monta a estrutura de nós e arestas
-- `updateOrgHierarchy(childId, parentId)` - Atualiza relação de reporte
+## ⚙️ Funcionalidades
 
-## Componentes Utilizados
-- `OrgChart` - Container principal com React Flow
-- `OrgNode` - Nó customizado (card de cargo)
+- 🎯 **Navegação Dinâmica**: Grafo interativo utilizando React Flow.
+- 👥 **Métricas de Nós**: Visualização de quantos colaboradores ocupam cada posição.
+- 📂 **Visão por Departamentos**: Agrupamento visual por áreas de negócio.
+- 🔍 **Busca de Cargos**: Localização instantânea de posições na hierarquia.
 
-## Tecnologias
-- **React Flow** - Biblioteca de grafos interativos
-- **Prisma** - ORM para buscar dados de `JobRole` e `Employee`
+---
 
-## Última Atualização
-**2026-01-28** - Criação do módulo de organograma
+## 🎨 Visualização
+
+- **Nós de Departamento**: Representam as áreas (ex: Tecnologia, RH).
+- **Nós de Cargo**: Representam as posições dentro das áreas.
+- **Cores**: Identificação visual rápida por macro-área.
+
+---
+
+## 📁 Arquivos
+
+| Arquivo | Descrição |
+|---------|-----------|
+| `/app/organograma/page.tsx` | Página de visualização do grafo organizacional |
+| `/components/org-chart.tsx` | Componente principal do grafo |
+| `/components/org-node.tsx` | Estilização individual dos nós do organograma |
+| `/app/actions/organization.ts` | Server Actions para fetch de estrutura |
+
+---
+
+## 🔄 Última Atualização
+
+**2026-01-29** - Documentação do módulo de organograma.
