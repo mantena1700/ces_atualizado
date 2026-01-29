@@ -1,26 +1,227 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+}
+
+/* =========================================================
+   MANUAL DE CARGOS E SALÁRIOS - ESTILOS
+   ========================================================= */
+
+.manual-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.875rem;
+}
+
+.manual-table th,
+.manual-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border: 1px solid #e2e8f0;
+}
+
+.manual-table th {
+  background: linear-gradient(to right, #f8fafc, #f1f5f9);
+  font-weight: 700;
+  color: #334155;
+}
+
+.manual-table tr:nth-child(even) {
+  background-color: #f8fafc;
+}
+
+.manual-table.compact td {
+  padding: 0.5rem 1rem;
+}
+
+/* Hierarchy Box */
+.hierarchy-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  background: linear-gradient(to bottom, #f8fafc, #fff);
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  margin: 1.5rem 0;
+}
+
+.hierarchy-level {
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  text-align: center;
+  transition: transform 0.2s;
+}
+
+.hierarchy-level:hover {
+  transform: scale(1.02);
+}
+
+.hierarchy-level.level-1 {
+  background: linear-gradient(to right, #1e40af, #3730a3);
+  color: white;
+  font-size: 1rem;
+}
+
+.hierarchy-level.level-2 {
+  background: linear-gradient(to right, #2563eb, #4f46e5);
+  color: white;
+  margin-left: 1rem;
+}
+
+.hierarchy-level.level-3 {
+  background: linear-gradient(to right, #3b82f6, #6366f1);
+  color: white;
+  margin-left: 2rem;
+}
+
+.hierarchy-level.level-4 {
+  background: linear-gradient(to right, #60a5fa, #818cf8);
+  color: white;
+  margin-left: 3rem;
+}
+
+.hierarchy-level.level-5 {
+  background: linear-gradient(to right, #93c5fd, #a5b4fc);
+  color: #1e3a8a;
+  margin-left: 4rem;
+}
+
+.hierarchy-level.level-6 {
+  background: linear-gradient(to right, #bfdbfe, #c7d2fe);
+  color: #1e40af;
+  margin-left: 5rem;
+}
+
+.hierarchy-level.level-7 {
+  background: linear-gradient(to right, #dbeafe, #e0e7ff);
+  color: #3730a3;
+  margin-left: 6rem;
+}
+
+/* Signature Box */
+.signature-box {
+  margin-top: 3rem;
+  padding: 2rem;
+  background: #f8fafc;
+  border-radius: 1rem;
+  border: 2px dashed #cbd5e1;
+}
+
+.signature-line {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.signature-name {
+  font-size: 1rem;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+}
+
+.signature-role {
+  font-weight: 600;
+  color: #334155;
+}
+
+.signature-date {
+  text-align: center;
+  color: #64748b;
+  margin-top: 1.5rem;
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }

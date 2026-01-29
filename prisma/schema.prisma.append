@@ -1,0 +1,17 @@
+
+// =========================================================
+// MÓDULO 4: GESTÃO ORÇAMENTÁRIA (BUDGET)
+// =========================================================
+
+model DepartmentBudget {
+  id            String   @id @default(uuid())
+  department    String
+  year          Int
+  monthlyBudget Decimal // Orçamento Mensal Aprovado (Salário + Encargos)
+  headcountLimit Int     // Headcount Aprovado (Meta de Vagas)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([department, year])
+}

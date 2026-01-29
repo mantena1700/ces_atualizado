@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Factor {
+  id    String @id @default(uuid())
+  name  String
+}
+
+model Benefit {
+  id    String @id @default(uuid())
+  name  String
+}
+
+model Employee {
+  id       String @id @default(uuid())
+  name     String
+  benefits EmployeeBenefit[]
+}
+
+model EmployeeBenefit {
+  id         String   @id @default(uuid())
+  employeeId String
+  benefitId  String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  benefit    Benefit  @relation(fields: [benefitId], references: [id])
+  @@unique([employeeId, benefitId])
+}

@@ -1,0 +1,517 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// =========================================================
+// MULO 1: AVALIA E PONTUA (POINT FACTOR METHOD)
+// =========================================================
+
+// Fatores de Avaliao (Ex: "Conhecimento", "Responsabilidade")
+model Factor {
+  id          String   @id @default(uuid())
+  name        String // Nome do fator (ex: Escolaridade)
+  description String? // Explicao do que ele mede
+  weight      Float    @default(1.0) // Peso do fator na nota (1 = 100%, 0.5 = 50%)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relacionamentos
+  levels FactorLevel[]
+}
+
+// Nveis de cada Fator (Ex: "Ensino Mdio - 10 pontos")
+model FactorLevel {
+  id          String @id @default(uuid())
+  factorId    String
+  level       Int // Ordem (1, 2, 3...)
+  description String // Descrio (ex: Superior Completo)
+  points      Int // Pontos que esse nvel vale (ex: 100)
+
+  // Relacionamentos
+  factor    Factor     @relation(fields: [factorId], references: [id], onDelete: Cascade)
+  jobScores JobScore[]
+}
+
+// =========================================================
+// MULO 2: CARGOS E CARREIRA
+// =========================================================
+
+// Cargo (Job Role)
+model JobRole {
+  id          String  @id @default(uuid())
+  title       String // Ttulo do cargo
+  description String?
+  department  String? // Departamento Macro (ex: Tecnologia)
+  area        String? // ea Especfica (ex: Infraestrutura)
+  cbo         String? // Cdigo CBO (ex: 2124-05)
+
+  // Hierarquia (Quem  o chefe?)
+  reportsToId  String?
+  reportsTo    JobRole?  @relation("Hierarchy", fields: [reportsToId], references: [id])
+  subordinates JobRole[] @relation("Hierarchy")
+
+  // Resultados da Avaliao
+  totalPoints Int @default(0) // Pontuao calculada
+
+  // Layout no Mapa de Carreira
+  mapX Int?
+  mapY Int?
+
+  // Relacionamentos
+  gradeId String? // Vnculo com a Grade Salarial
+  grade   SalaryGrade? @relation(fields: [gradeId], references: [id])
+
+  scores JobScore[] // As notas desse cargo em cada fator
+
+  // Plano de Carreira (Grafos)
+  nextMoves     CareerPath[] @relation("OriginRole")
+  previousMoves CareerPath[] @relation("TargetRole")
+
+  employees Employee[] // Funcionrios neste cargo
+
+  // Descrio Detalhada do Cargo
+  jobDescription JobDescription?
+
+  evaluations PerformanceEvaluation[]
+
+  // Matriz de Competncias
+  competencies JobCompetency[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Descrio Detalhada do Cargo (Documento Profissional)
+model JobDescription {
+  id        String  @id @default(uuid())
+  jobRoleId String  @unique
+  jobRole   JobRole @relation(fields: [jobRoleId], references: [id], onDelete: Cascade)
+
+  // Sumrio Executivo
+  summary   String? // Resumo do cargo (1-2 pargrafos)
+  objective String? // Objetivo/Misso do cargo
+
+  // Requisitos Mnimos
+  education       String? // Escolaridade mnima exigida
+  experience      String? // Experincia mnima (ex: "3 anos em...")
+  certifications  String? // Certificaes obrigatrias
+  technicalSkills String? // Habilidades tcnicas (lista)
+  softSkills      String? // Habilidades comportamentais
+  languages       String? // Idiomas necessrios
+
+  // Responsabilidades e Atribuies
+  responsibilities String? // Lista de responsabilidades principais
+  activities       String? // Atividades do dia a dia
+  kpis             String? // Indicadores de desempenho (KPIs)
+
+  // Contexto Organizacional
+  subordinatesDesc String? // Descrio dos subordinados diretos
+  interactions     String? // Com quem interage (interno/externo)
+  decisions        String? // Nvel de autonomia/decises
+
+  // Condies de Trabalho
+  workRegime      String? // Presencial, Hbrido, Remoto
+  workHours       String? // Horrio de trabalho
+  travelRequired  String? // Necessidade de viagens
+  physicalDemands String? // Demandas fsicas (se aplicvel)
+
+  // Metadata
+  version    Int       @default(1)
+  status     String    @default("DRAFT") // DRAFT, REVIEW, APPROVED
+  approvedBy String? // Quem aprovou
+  approvedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Pontuao Especfica do Cargo (Ex: Analista tem Nvel 3 em Escolaridade)
+model JobScore {
+  id            String @id @default(uuid())
+  jobRoleId     String
+  factorLevelId String
+
+  // Relacionamentos
+  jobRole     JobRole     @relation(fields: [jobRoleId], references: [id], onDelete: Cascade)
+  factorLevel FactorLevel @relation(fields: [factorLevelId], references: [id])
+
+  @@unique([jobRoleId, factorLevelId])
+}
+
+// Caminhos de Carreira (Quem pode virar o que)
+model CareerPath {
+  id           String  @id @default(uuid())
+  fromRoleId   String
+  toRoleId     String
+  requirements String? // O que precisa pra subir? (GAP)
+
+  // Relacionamentos
+  fromRole JobRole @relation("OriginRole", fields: [fromRoleId], references: [id])
+  toRole   JobRole @relation("TargetRole", fields: [toRoleId], references: [id])
+}
+
+// =========================================================
+// MULO 2.5: MATRIZ DE COMPETCIAS
+// =========================================================
+
+// Competncia (Ex: "Liderana", "Comunicao", "Excel Avanado")
+model Competency {
+  id          String  @id @default(uuid())
+  name        String // Nome da competncia
+  description String? // Descrio detalhada
+  category    String  @default("TECHNICAL") // TECHNICAL, BEHAVIORAL, ORGANIZATIONAL
+  critical    Boolean @default(false) // Se  competncia crtica
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relacionamentos
+  levels          CompetencyLevel[]
+  jobCompetencies JobCompetency[]
+  evaluationItems EvaluationItem[]
+}
+
+// Nveis de Proficincia (Ex: "Bsico", "Intermedirio", "Avanado", "Expert")
+model CompetencyLevel {
+  id           String  @id @default(uuid())
+  competencyId String
+  level        Int // Ordem (1, 2, 3, 4, 5)
+  name         String // Nome do nvel (Ex: "Bsico", "Avanado")
+  description  String? // O que significa ter esse nvel
+  indicators   String? // Indicadores comportamentais observveis
+
+  competency      Competency      @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+  jobCompetencies JobCompetency[]
+
+  @@unique([competencyId, level])
+}
+
+// Matriz: Cargo x Competncia (Nvel esperado por cargo)
+model JobCompetency {
+  id                String @id @default(uuid())
+  jobRoleId         String
+  competencyId      String
+  competencyLevelId String // Nvel esperado para o cargo
+
+  required Boolean @default(true) // Obrigatria ou desejvel
+  weight   Int     @default(1) // Peso na avaliao (1-5)
+
+  jobRole         JobRole         @relation(fields: [jobRoleId], references: [id], onDelete: Cascade)
+  competency      Competency      @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+  competencyLevel CompetencyLevel @relation(fields: [competencyLevelId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([jobRoleId, competencyId])
+}
+
+// =========================================================
+// MULO 3: ESTRUTURA SALARIAL (GRADES & STEPS)
+// =========================================================
+
+// Grade Salarial (O eixo vertical da tabela: Grade 1, Grade 2...)
+model SalaryGrade {
+  id        String @id @default(uuid())
+  name      String // Ex: "Grade 05 - Analista Sr"
+  minPoints Int    @default(0) // Pontuao mnima para entrar nesse grade
+  maxPoints Int    @default(9999) // Pontuao mxima
+
+  // Relacionamentos
+  jobRoles JobRole[]
+  values   SalaryGrid[]
+}
+
+// Step Salarial (O eixo horizontal: A, B, C, D...)
+model SalaryStep {
+  id         String @id @default(uuid())
+  name       String // Ex: "A", "B", "Step 1"
+  percentage Float? // Se for calculado (ex: 5% a mais que o anterior)
+
+  values SalaryGrid[]
+}
+
+// A Matriz de Valores (Grade X Step = Salrio)
+model SalaryGrid {
+  id      String  @id @default(uuid())
+  gradeId String
+  stepId  String
+  amount  Decimal // O valor monetrio (R$)
+
+  grade SalaryGrade @relation(fields: [gradeId], references: [id], onDelete: Cascade)
+  step  SalaryStep  @relation(fields: [stepId], references: [id], onDelete: Cascade)
+
+  @@unique([gradeId, stepId])
+}
+
+model Benefit {
+  id          String  @id @default(uuid())
+  name        String // Ex: VR, VA, Plano de Sade
+  type        String // FIXED (valor em R$) ou PERCENTAGE (% do salrio)
+  value       Decimal // Valor nominal ou percentual
+  description String?
+
+  employees EmployeeBenefit[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EmployeeBenefit {
+  id         String @id @default(uuid())
+  employeeId String
+  benefitId  String
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  benefit  Benefit  @relation(fields: [benefitId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, benefitId])
+}
+
+model Employee {
+  id            String    @id @default(uuid())
+  name          String
+  email         String?   @unique
+  admissionDate DateTime?
+
+  // Tipo de Contratao
+  hiringType String @default("CLT") // CLT ou PJ
+
+  // Cargo Atual
+  jobRoleId String?
+  jobRole   JobRole? @relation(fields: [jobRoleId], references: [id])
+
+  // Enquadramento Salarial Atual
+  salary Decimal @default(0) // Salrio Nominal Real
+
+  // Benefcios vinculados
+  benefits EmployeeBenefit[]
+
+  // Dados Pessoais Completos
+  cpf           String?
+  birthDate     DateTime?
+  personalEmail String?
+  phone         String?
+
+  // Endereo
+  zipCode      String?
+  address      String?
+  number       String?
+  complement   String?
+  neighborhood String?
+  city         String?
+  state        String?
+
+  gradeId String?
+  stepId  String?
+
+  // Cronograma de Implementao
+  phaseId String?
+  phase   ImplementationPhase? @relation(fields: [phaseId], references: [id])
+
+  evaluations PerformanceEvaluation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ImplementationPhase {
+  id          String     @id @default(cuid())
+  name        String // Ex: "Onda 1 - Enquadramento Legal"
+  targetDate  DateTime // Data prevista para o ajuste
+  description String?
+  employees   Employee[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SystemConfig {
+  id          String   @id @default(uuid())
+  key         String   @unique // Ex: TAX_CLT_FGTS, TAX_PJ_EXTRA
+  value       String // Guardaremos como string para flexibilidade
+  description String?
+  category    String   @default("GENERAL") // TAXES, GENERAL, etc.
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// =========================================================
+// MULO 4: GEST ORMENTIA (BUDGET)
+// =========================================================
+
+model DepartmentBudget {
+  id             String  @id @default(uuid())
+  department     String
+  year           Int
+  monthlyBudget  Decimal // Oramento Mensal Aprovado (Salrio + Encargos)
+  headcountLimit Int // Headcount Aprovado (Meta de Vagas)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([department, year])
+}
+
+// =========================================================
+// MULO 5: PLANEJAMENTO ORMENTIO AVANDO
+// =========================================================
+
+// Plano Oramentrio Principal (Ex: "Oramento 2026", "1 Semestre 2026")
+model BudgetPlan {
+  id          String  @id @default(uuid())
+  name        String // Nome do plano (Ex: "Oramento Anual 2026")
+  description String? // Descrio ou observaes
+  periodType  String // ANNUAL, SEMESTER, QUARTER, MONTHLY
+  year        Int // Ano de referncia
+  semester    Int? // 1 ou 2 (se for semestral)
+  quarter     Int? // 1, 2, 3 ou 4 (se for trimestral)
+  month       Int? // 1-12 (se for mensal)
+
+  status String @default("DRAFT") // DRAFT, APPROVED, CLOSED
+
+  // Totais Calculados (Cache para performance)
+  totalBudget    Decimal @default(0)
+  totalHeadcount Int     @default(0)
+
+  // Itens do Plano
+  items BudgetPlanItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Itens do Plano Oramentrio (Um para cada departamento)
+model BudgetPlanItem {
+  id     String     @id @default(uuid())
+  planId String
+  plan   BudgetPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  department String // Nome do departamento
+
+  // Metas Planejadas
+  plannedBudget    Decimal // Verba planejada para o perodo
+  plannedHeadcount Int // Quantidade de pessoas planejada
+
+  // Notas e Justificativas
+  notes String? // Observaes sobre este departamento
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([planId, department])
+}
+
+// =========================================================
+// MDULO 5: AVALIAO DE DESEMPENHO
+// =========================================================
+
+// Ciclo de Avaliao (Ex: 2026.1)
+model PerformanceCycle {
+  id          String   @id @default(uuid())
+  name        String // Ex: 'Avaliao Anual 2026'
+  startDate   DateTime
+  endDate     DateTime
+  description String?
+  active      Boolean  @default(true) // Apenas um ativo por vez
+  status      String   @default("PLANNING") // PLANNING, OPEN, REVIEW, CLOSED
+
+  evaluations PerformanceEvaluation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// A Avaliao de um Funcionio em um Ciclo
+model PerformanceEvaluation {
+  id         String @id @default(uuid())
+  employeeId String // Quem est sendo avaliado
+  cycleId    String // Qual ciclo
+  jobRoleId  String // Cargo no momento da avaliao (snapshot)
+
+  status String @default("PENDING") // PENDING, IN_PROGRESS, SUBMITTED, REVIEWED, DONE
+
+  selfEvaluationDate    DateTime?
+  managerEvaluationDate DateTime?
+
+  finalScore Float? // Nota final calculada (0-5 ou 0-100)
+
+  feedback     String? // Feedback geral do gestor
+  strengths    String? // Pontos fortes
+  improvements String? // Pontos a melhorar
+
+  employee Employee         @relation(fields: [employeeId], references: [id])
+  cycle    PerformanceCycle @relation(fields: [cycleId], references: [id])
+  jobRole  JobRole          @relation(fields: [jobRoleId], references: [id])
+
+  items EvaluationItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([employeeId, cycleId])
+}
+
+// Nota em cada item (Competcia ou Meta)
+model EvaluationItem {
+  id           String @id @default(uuid())
+  evaluationId String
+
+  type String // COMPETENCY, GOAL, VALUES
+
+  // Se for competcia
+  competencyId      String?
+  competencyLevelId String? // Nel Esperado (Snapshot)
+
+  weight Int @default(1)
+
+  score    Float? // Nota dada (1-5)
+  comments String? // Comentio especico do item
+
+  evaluation PerformanceEvaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  competency Competency?           @relation(fields: [competencyId], references: [id])
+}
+
+// =========================================================
+// MÓDULO 6: MANUAL DE CARGOS E SALÁRIOS (DOCUMENTAÇÃO)
+// =========================================================
+
+model ManualVersion {
+  id            String    @id @default(uuid())
+  title         String    // Ex: "Política 2026 - Versão 1"
+  status        String    @default("DRAFT") // DRAFT, REVIEW, PUBLISHED, ARCHIVED
+  effectiveDate DateTime? // Data de vigência
+  publishedAt   DateTime?
+  publishedBy   String?   // Nome do usuário que publicou
+
+  sections ManualSection[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ManualSection {
+  id              String        @id @default(uuid())
+  manualVersionId String
+  manualVersion   ManualVersion @relation(fields: [manualVersionId], references: [id], onDelete: Cascade)
+
+  title   String // Ex: "1. Introdução", "2. Estrutura Salarial"
+  content String // Conteúdo em HTML/Markdown
+  order   Int    // Ordem de exibição (1, 2, 3...)
+  type    String @default("TEXT") // TEXT, DYNAMIC_JOBLIST, DYNAMIC_SALARY_TABLE
+
+  parentId String?        // Para subseções (hierarquia)
+  parent   ManualSection? @relation("SectionHierarchy", fields: [parentId], references: [id])
+  children ManualSection[] @relation("SectionHierarchy")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
