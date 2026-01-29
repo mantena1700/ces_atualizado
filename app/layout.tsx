@@ -3,6 +3,8 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { Sidebar } from '@/components/sidebar';
 
+import { Toaster } from 'sonner';
+
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
@@ -24,6 +26,7 @@ export default function RootLayout({
         <main className="flex-1 overflow-y-auto">
           {children}
         </main>
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   );

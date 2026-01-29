@@ -25,7 +25,8 @@ import {
     Brain,
     Building2,
     PieChart,
-    Target
+    Target,
+    Grid3X3
 } from 'lucide-react';
 
 // Estrutura do Menu Reorganizada (Fluxo Lógico PCCS)
@@ -66,10 +67,12 @@ const menuStructure = [
         ]
     },
     {
-        section: 'Avaliação de Desempenho',
-        href: '/avaliacao',
+        section: 'Gestão de Desempenho',
         icon: Target,
-        label: 'Avaliação de Desempenho'
+        items: [
+            { href: '/avaliacao', icon: ClipboardList, label: 'Ciclos de Avaliação' },
+            { href: '/ninebox', icon: Grid3X3, label: 'Matriz Nine Box' },
+        ]
     },
     {
         section: 'Documentação Oficial',

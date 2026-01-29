@@ -8,7 +8,8 @@ export async function getEmployees() {
         include: {
             jobRole: true,
             phase: true,
-            benefits: { include: { benefit: true } }
+            benefits: { include: { benefit: true } },
+            manager: { select: { id: true, name: true } }
         },
         orderBy: { name: 'asc' }
     });
@@ -16,6 +17,8 @@ export async function getEmployees() {
     return data.map(emp => ({
         ...emp,
         salary: Number(emp.salary),
+        managerName: emp.manager?.name,
+        managerId: emp.managerId,
         benefits: emp.benefits.map(eb => ({
             ...eb,
             benefit: {
@@ -44,6 +47,7 @@ export async function createEmployee(data: {
     neighborhood?: string;
     city?: string;
     state?: string;
+    managerId?: string | null;
 }) {
     try {
         const employee = await prisma.employee.create({
@@ -64,6 +68,7 @@ export async function createEmployee(data: {
                 neighborhood: data.neighborhood,
                 city: data.city,
                 state: data.state,
+                managerId: data.managerId,
                 // Inserção direta de benefícios se fornecidos
                 benefits: {
                     create: data.benefitIds?.map(id => ({
@@ -99,6 +104,7 @@ export async function updateEmployee(id: string, data: {
     neighborhood?: string;
     city?: string;
     state?: string;
+    managerId?: string | null;
 }) {
     try {
         await prisma.employee.update({
@@ -119,7 +125,8 @@ export async function updateEmployee(id: string, data: {
                 complement: data.complement,
                 neighborhood: data.neighborhood,
                 city: data.city,
-                state: data.state
+                state: data.state,
+                managerId: data.managerId,
             }
         });
 

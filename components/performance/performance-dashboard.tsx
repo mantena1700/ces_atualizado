@@ -7,11 +7,18 @@ import { Input } from '@/components/ui/input';
 import {
     Target, Calendar, User, ChevronRight, BarChart2, TrendingUp,
     Trophy, AlertTriangle, Rocket, Search, Plus, Users, CheckCircle2,
-    Clock, Star, ArrowUpRight, Sparkles
+    Clock, Star, ArrowUpRight, Sparkles, Send, Mail
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { NewCycleModal } from './new-cycle-modal';
-import { createPerformanceCycle, initializeEvaluationsForCycle } from '@/app/actions/performance';
+import { BatchManagerAssignmentDialog } from './batch-manager-assignment-dialog';
+import {
+    createPerformanceCycle,
+    initializeEvaluationsForCycle,
+    sendBatchNotifications
+} from '@/app/actions/performance';
+import { toast } from 'sonner';
 
 interface Props {
     cycles: any[];
@@ -25,6 +32,43 @@ export function PerformanceDashboard({ cycles, activeCycle, evaluations, insight
     const [showCycleModal, setShowCycleModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [initializing, setInitializing] = useState(false);
+    const [sendingNotifications, setSendingNotifications] = useState(false);
+
+    // Batch Assignment State
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [showBatchAssignDialog, setShowBatchAssignDialog] = useState(false);
+    const router = useRouter();
+
+    const toggleSelection = (id: string) => {
+        const newSet = new Set(selectedIds);
+        if (newSet.has(id)) newSet.delete(id);
+        else newSet.add(id);
+        setSelectedIds(newSet);
+    };
+
+    const toggleAll = () => {
+        if (selectedIds.size === filteredEvaluations.length) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(filteredEvaluations.map(e => e.id)));
+        }
+    };
+
+    const handleBatchSendNotifications = async () => {
+        setSendingNotifications(true);
+        const result = await sendBatchNotifications(Array.from(selectedIds));
+
+        if (result.success) {
+            toast.success(`${result.count} notificações enviadas com sucesso!`);
+            setIsSelectionMode(false);
+            setSelectedIds(new Set());
+            router.refresh();
+        } else {
+            toast.error('Erro ao enviar notificações: ' + result.error);
+        }
+        setSendingNotifications(false);
+    };
 
     const handleInitializeAll = async () => {
         if (!activeCycle) return;
@@ -296,17 +340,31 @@ export function PerformanceDashboard({ cycles, activeCycle, evaluations, insight
                 <Card className="p-6 bg-white border-0 shadow-lg">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                         <div>
-                            <h2 className="text-xl font-bold text-slate-800">Avaliações do Ciclo</h2>
+                            <h2 className="text-xl font-bold text-slate-800">Avaliações ({evaluations.length})</h2>
                             <p className="text-slate-500 text-sm">{evaluations.length} colaboradores</p>
                         </div>
-                        <div className="relative w-full md:w-80">
-                            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                            <Input
-                                placeholder="Buscar por nome ou cargo..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-9"
-                            />
+                        <div className="flex gap-2 w-full md:w-auto">
+                            {evaluations.length > 0 && (
+                                <Button
+                                    variant={isSelectionMode ? "secondary" : "outline"}
+                                    onClick={() => {
+                                        setIsSelectionMode(!isSelectionMode);
+                                        setSelectedIds(new Set());
+                                    }}
+                                    className={isSelectionMode ? "bg-slate-200" : ""}
+                                >
+                                    {isSelectionMode ? 'Cancelar Seleção' : 'Gerenciar em Lote'}
+                                </Button>
+                            )}
+                            <div className="relative w-full md:w-80">
+                                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                                <Input
+                                    placeholder="Buscar por nome ou cargo..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-9"
+                                />
+                            </div>
                         </div>
                     </div>
 
@@ -331,54 +389,87 @@ export function PerformanceDashboard({ cycles, activeCycle, evaluations, insight
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {filteredEvaluations.map((evaluation) => (
-                                <Link
-                                    key={evaluation.id}
-                                    href={`/avaliacao/${evaluation.employeeId}`}
-                                    className="group"
-                                >
-                                    <Card className="p-5 border border-slate-100 hover:border-rose-200 hover:shadow-xl transition-all bg-white group-hover:bg-gradient-to-br group-hover:from-white group-hover:to-rose-50/50">
-                                        <div className="flex items-start justify-between mb-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-rose-100 to-orange-100 flex items-center justify-center text-lg font-bold text-rose-600 group-hover:from-rose-200 group-hover:to-orange-200 transition-colors">
-                                                    {evaluation.employeeName.charAt(0)}
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-semibold text-slate-800 group-hover:text-rose-600 transition-colors line-clamp-1">
-                                                        {evaluation.employeeName}
-                                                    </h4>
-                                                    <p className="text-xs text-slate-500 line-clamp-1">
-                                                        {evaluation.jobRoleTitle}
-                                                    </p>
+                                <div key={evaluation.id} className="relative group">
+                                    {isSelectionMode && (
+                                        <div className="absolute top-4 right-4 z-20">
+                                            <input
+                                                type="checkbox"
+                                                className="w-5 h-5 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer"
+                                                checked={selectedIds.has(evaluation.id)}
+                                                onChange={() => toggleSelection(evaluation.id)}
+                                            />
+                                        </div>
+                                    )}
+                                    <Link
+                                        href={isSelectionMode ? '#' : `/avaliacao/${evaluation.employeeId}`}
+                                        onClick={(e) => {
+                                            if (isSelectionMode) {
+                                                e.preventDefault();
+                                                toggleSelection(evaluation.id);
+                                            }
+                                        }}
+                                        className={`block ${isSelectionMode ? 'cursor-pointer' : ''}`}
+                                    >
+                                        <Card className={`p-5 border transition-all bg-white 
+                                            ${selectedIds.has(evaluation.id)
+                                                ? 'border-rose-500 ring-1 ring-rose-500 bg-rose-50/30'
+                                                : 'border-slate-100 hover:border-rose-200 hover:shadow-xl group-hover:bg-gradient-to-br group-hover:from-white group-hover:to-rose-50/50'
+                                            }`}>
+                                            <div className="flex items-start justify-between mb-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-rose-100 to-orange-100 flex items-center justify-center text-lg font-bold text-rose-600">
+                                                        {evaluation.employeeName.charAt(0)}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-semibold text-slate-800 line-clamp-1">
+                                                            {evaluation.employeeName}
+                                                        </h4>
+                                                        <p className="text-xs text-slate-500 line-clamp-1">
+                                                            {evaluation.jobRoleTitle}
+                                                        </p>
+                                                        {evaluation.managerName && (
+                                                            <div className="flex items-center gap-1 mt-1">
+                                                                <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center text-[10px] text-blue-600 font-bold">
+                                                                    {evaluation.managerName.charAt(0)}
+                                                                </div>
+                                                                <span className="text-xs text-slate-400">
+                                                                    {evaluation.managerName.split(' ')[0]}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        <div className="flex items-center justify-between">
-                                            <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${getStatusColor(evaluation.status)}`}>
-                                                {getStatusLabel(evaluation.status)}
-                                            </span>
+                                            <div className="flex items-center justify-between">
+                                                <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${getStatusColor(evaluation.status)}`}>
+                                                    {getStatusLabel(evaluation.status)}
+                                                </span>
 
-                                            {evaluation.finalScore !== null ? (
-                                                <div className="text-right">
-                                                    <span className={`text-2xl font-bold ${getScoreColor(evaluation.finalScore)}`}>
-                                                        {evaluation.finalScore.toFixed(1)}
+                                                {evaluation.finalScore !== null ? (
+                                                    <div className="text-right">
+                                                        <span className={`text-2xl font-bold ${getScoreColor(evaluation.finalScore)}`}>
+                                                            {evaluation.finalScore.toFixed(1)}
+                                                        </span>
+                                                        <span className="text-xs text-slate-400 ml-1">/5</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-xs text-slate-400">
+                                                        {evaluation.completedItems}/{evaluation.totalItems} itens
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {!isSelectionMode && (
+                                                <div className="mt-4 pt-4 border-t border-slate-100 flex justify-end">
+                                                    <span className="text-sm text-rose-600 font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        Ver Avaliação <ChevronRight className="w-4 h-4" />
                                                     </span>
-                                                    <span className="text-xs text-slate-400 ml-1">/5</span>
-                                                </div>
-                                            ) : (
-                                                <div className="text-xs text-slate-400">
-                                                    {evaluation.completedItems}/{evaluation.totalItems} itens
                                                 </div>
                                             )}
-                                        </div>
-
-                                        <div className="mt-4 pt-4 border-t border-slate-100 flex justify-end">
-                                            <span className="text-sm text-rose-600 font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                Ver Avaliação <ChevronRight className="w-4 h-4" />
-                                            </span>
-                                        </div>
-                                    </Card>
-                                </Link>
+                                        </Card>
+                                    </Link>
+                                </div>
                             ))}
                         </div>
                     )}
@@ -389,6 +480,64 @@ export function PerformanceDashboard({ cycles, activeCycle, evaluations, insight
                     isOpen={showCycleModal}
                     onClose={() => setShowCycleModal(false)}
                 />
+
+                {/* Batch Assignment Dialog */}
+                {showBatchAssignDialog && (
+                    <BatchManagerAssignmentDialog
+                        evaluationIds={Array.from(selectedIds)}
+                        onClose={() => setShowBatchAssignDialog(false)}
+                        onSuccess={() => {
+                            setShowBatchAssignDialog(false);
+                            setIsSelectionMode(false);
+                            setSelectedIds(new Set());
+                            router.refresh();
+                        }}
+                    />
+                )}
+
+                {/* Floating Action Bar */}
+                {isSelectionMode && (
+                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white rounded-full shadow-2xl border border-slate-200 px-6 py-3 flex items-center gap-6 z-50 animate-in slide-in-from-bottom duration-300">
+                        <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                            <span className="bg-slate-900 text-white text-xs px-2 py-1 rounded-full">{selectedIds.size}</span>
+                            selecionados
+                        </div>
+                        <div className="h-6 w-px bg-slate-200" />
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={toggleAll}
+                                className="text-slate-600 hover:text-slate-900"
+                            >
+                                {selectedIds.size === filteredEvaluations.length ? 'Desmarcar Todos' : 'Selecionar Todos'}
+                            </Button>
+                            <Button
+                                size="sm"
+                                onClick={() => setShowBatchAssignDialog(true)}
+                                disabled={selectedIds.size === 0}
+                                className="bg-rose-600 hover:bg-rose-700 text-white rounded-full px-6"
+                            >
+                                Atribuir Gestor
+                            </Button>
+                            <Button
+                                size="sm"
+                                onClick={handleBatchSendNotifications}
+                                disabled={selectedIds.size === 0 || sendingNotifications}
+                                className="bg-purple-600 hover:bg-purple-700 text-white rounded-full px-6"
+                            >
+                                {sendingNotifications ? (
+                                    <span className="animate-pulse">Enviando...</span>
+                                ) : (
+                                    <>
+                                        <Send className="w-3 h-3 mr-2" />
+                                        Enviar Notificações
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

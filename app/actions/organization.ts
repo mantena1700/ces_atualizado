@@ -24,6 +24,8 @@ export interface OrgEdge {
     type: 'smoothstep';
 }
 
+import dagre from 'dagre';
+
 export async function getOrgChartData() {
     const roles = await prisma.jobRole.findMany({
         include: {
@@ -34,91 +36,72 @@ export async function getOrgChartData() {
         }
     });
 
-    // Construir hierarquia
-    // Vamos usar um algoritmo simples para determinar posições (X, Y)
-    // 1. Identificar raízes (sem reportsToId)
-    // 2. Descer níveis
+    const NODE_WIDTH = 350; // Largura do Card (300px) + Margem extra
+    const NODE_HEIGHT = 220; // Altura estimada do card
 
-    // Mapeamento auxiliar
-    const rolesMap = new Map();
-    roles.forEach(r => rolesMap.set(r.id, { ...r, children: [] }));
+    // Inicializar Graph do Dagre
+    const g = new dagre.graphlib.Graph();
+    g.setGraph({ rankdir: 'TB', nodesep: 150, ranksep: 150 });
+    g.setDefaultEdgeLabel(() => ({}));
 
-    const roots: any[] = [];
+    // Criar nós e arestas para o Dagre
+    roles.forEach(role => {
+        const totalSalary = role.employees.reduce((acc: number, e: any) => acc + Number(e.salary), 0);
 
-    roles.forEach(r => {
-        if (r.reportsToId && rolesMap.has(r.reportsToId)) {
-            rolesMap.get(r.reportsToId).children.push(rolesMap.get(r.id));
-        } else {
-            roots.push(rolesMap.get(r.id));
-        }
-    });
-
-    // Layout
-    const nodes: OrgNode[] = [];
-    const edges: OrgEdge[] = [];
-
-    const NODE_WIDTH = 280;
-    const NODE_HEIGHT = 150;
-    const GAP_X = 50;
-    const GAP_Y = 100;
-
-    // Função recursiva para posicionamento (DFS simples com ajuste de X)
-    let currentX = 0;
-
-    function layoutNode(node: any, depth: number) {
-        const startX = currentX;
-
-        // Processar filhos primeiro
-        node.children.forEach((child: any) => layoutNode(child, depth + 1));
-
-        // Posição X deste nó
-        // Se tem filhos, X é a média dos filhos. Se não, é currentX++
-        let nodeX = 0;
-        if (node.children.length > 0) {
-            const firstChild = nodes.find(n => n.id === node.children[0].id);
-            const lastChild = nodes.find(n => n.id === node.children[node.children.length - 1].id);
-            if (firstChild && lastChild) {
-                nodeX = (firstChild.position.x + lastChild.position.x) / 2;
-            } else {
-                nodeX = currentX;
-                currentX += NODE_WIDTH + GAP_X;
-            }
-        } else {
-            nodeX = currentX;
-            currentX += NODE_WIDTH + GAP_X;
-        }
-
-        const totalSalary = node.employees.reduce((acc: number, e: any) => acc + Number(e.salary), 0);
-
-        nodes.push({
-            id: node.id,
-            type: 'orgNode', // Vamos criar um custom node
-            position: { x: nodeX, y: depth * (NODE_HEIGHT + GAP_Y) },
+        // Adicionar nó ao grafo
+        g.setNode(role.id, {
+            width: NODE_WIDTH,
+            height: NODE_HEIGHT,
+            // Guardar dados para usar depois
             data: {
-                label: node.title,
-                department: node.department || 'Geral',
-                employees: node.employees.map((e: any) => ({ name: e.name })),
-                headCount: node.employees.length,
-                managerId: node.reportsToId,
+                label: role.title,
+                department: role.department || 'Geral',
+                employees: role.employees.map((e: any) => ({ name: e.name })),
+                headCount: role.employees.length,
+                managerId: role.reportsToId,
                 totalSalary: totalSalary
             }
         });
 
-        // Criar edges para os filhos
-        node.children.forEach((child: any) => {
-            edges.push({
-                id: `${node.id}-${child.id}`,
-                source: node.id,
-                target: child.id,
-                type: 'smoothstep'
-            });
-        });
-    }
+        // Adicionar aresta se tiver manager
+        if (role.reportsToId) {
+            g.setEdge(role.reportsToId, role.id);
+        }
+    });
 
-    // Iniciar layout para cada raiz (normalmente só 1 CEO, mas suporta múltiplas árvores)
-    roots.forEach(root => {
-        layoutNode(root, 0);
-        currentX += GAP_X * 2; // Espaço entre árvores desconexas
+    // Calcular Layout
+    dagre.layout(g);
+
+    // Transformar de volta para formato ReactFlow
+    const nodes: OrgNode[] = [];
+    const edges: OrgEdge[] = [];
+
+    g.nodes().forEach((nodeId) => {
+        const node: any = g.node(nodeId);
+
+        // Dagre retorna o centro do nó, ReactFlow usa o canto superior esquerdo
+        // Mas o custom node do ReactFlow geralmente é posicionado pelo centro ou topo-esquerda dependendo da config.
+        // Por padrão ReactFlow é top-left. Dagre dá x,y do centro.
+        // Correção: x - width/2, y - height/2
+
+        nodes.push({
+            id: nodeId,
+            type: 'orgNode',
+            position: {
+                x: node.x - (NODE_WIDTH / 2),
+                y: node.y - (NODE_HEIGHT / 2)
+            },
+            data: node.data
+        });
+    });
+
+    g.edges().forEach((edge) => {
+        edges.push({
+            id: `${edge.v}-${edge.w}`,
+            source: edge.v,
+            target: edge.w,
+            type: 'smoothstep'
+        });
     });
 
     return { nodes, edges };
@@ -126,8 +109,11 @@ export async function getOrgChartData() {
 
 export async function updateOrgHierarchy(childId: string, newParentId: string | null) {
     try {
-        // Prevenir ciclos simples (a -> b -> a)
+        // Prevenir auto-referência
         if (childId === newParentId) return { success: false, error: "Auto-referência não permitida" };
+
+        // Prevenir ciclos (básico)
+        // Idealmente faríamos uma verificação de ciclo mais robusta aqui
 
         await prisma.jobRole.update({
             where: { id: childId },

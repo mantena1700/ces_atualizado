@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { createEmployee, updateEmployee, deleteEmployee } from "@/app/actions/employees";
+import { createEmployee, updateEmployee, deleteEmployee, getEmployees } from "@/app/actions/employees";
 import { getJobRoles } from '@/app/actions/jobs';
 import { getBenefits } from '@/app/actions/benefits';
 import {
@@ -26,6 +26,7 @@ interface EmployeeFormProps {
 export function EmployeeForm({ onClose, onSuccess, initialData }: EmployeeFormProps) {
     const [loading, setLoading] = useState(false);
     const [roles, setRoles] = useState<any[]>([]);
+    const [managers, setManagers] = useState<any[]>([]);
     const [availableBenefits, setAvailableBenefits] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState("pessoal");
     const [saveSuccess, setSaveSuccess] = useState(false);
@@ -51,6 +52,7 @@ export function EmployeeForm({ onClose, onSuccess, initialData }: EmployeeFormPr
     // Form State - Contrato / Financeiro
     const [salary, setSalary] = useState(initialData?.salary?.toString() || '');
     const [jobRoleId, setJobRoleId] = useState(initialData?.jobRoleId || '');
+    const [managerId, setManagerId] = useState(initialData?.managerId || '');
     const [hiringType, setHiringType] = useState(initialData?.hiringType || 'CLT');
     const [benefitIds, setBenefitIds] = useState<string[]>(initialData?.benefits?.map((b: any) => b.benefitId) || []);
     const [admissionDate, setAdmissionDate] = useState(initialData?.admissionDate ? new Date(initialData.admissionDate).toISOString().split('T')[0] : '');
@@ -67,7 +69,15 @@ export function EmployeeForm({ onClose, onSuccess, initialData }: EmployeeFormPr
     useEffect(() => {
         getJobRoles().then(setRoles);
         getBenefits().then(setAvailableBenefits);
-    }, []);
+        getEmployees().then(emps => {
+            // Filtrar o próprio funcionário se estiver editando para evitar ciclo
+            if (initialData?.id) {
+                setManagers(emps.filter(e => e.id !== initialData.id));
+            } else {
+                setManagers(emps);
+            }
+        });
+    }, [initialData]);
 
     const toggleBenefit = (id: string) => {
         setBenefitIds(prev =>
@@ -96,6 +106,7 @@ export function EmployeeForm({ onClose, onSuccess, initialData }: EmployeeFormPr
             neighborhood: neighborhood || undefined,
             city: city || undefined,
             state: state || undefined,
+            managerId: managerId || null,
             admissionDate: admissionDate ? admissionDate : undefined
         };
 
@@ -451,6 +462,20 @@ export function EmployeeForm({ onClose, onSuccess, initialData }: EmployeeFormPr
                                                 <option key={r.id} value={r.id}>
                                                     {r.title} {r.grade?.name ? `(${r.grade.name})` : ''}
                                                 </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-2 mb-4">
+                                        <Label className="text-xs uppercase font-semibold text-slate-500 tracking-wide">Gestor Responsável</Label>
+                                        <select
+                                            className="w-full h-12 px-4 rounded-xl border border-emerald-200 bg-white font-medium focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                            value={managerId}
+                                            onChange={e => setManagerId(e.target.value)}
+                                        >
+                                            <option value="">Sem gestor (Diretoria/Presidência)</option>
+                                            {managers.map(m => (
+                                                <option key={m.id} value={m.id}>{m.name} {m.jobRole ? `- ${m.jobRole.title}` : ''}</option>
                                             ))}
                                         </select>
                                     </div>

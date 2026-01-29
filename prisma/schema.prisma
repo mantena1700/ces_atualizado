@@ -313,9 +313,13 @@ model Employee {
   gradeId String?
   stepId  String?
 
-  // Cronograma de Implementao
   phaseId String?
   phase   ImplementationPhase? @relation(fields: [phaseId], references: [id])
+
+  // Hierarquia (Gestor Direto)
+  managerId String?
+  manager   Employee?  @relation("ManagerSubordinates", fields: [managerId], references: [id])
+  subordinates Employee[] @relation("ManagerSubordinates")
 
   evaluations PerformanceEvaluation[]
 
@@ -411,13 +415,13 @@ model BudgetPlanItem {
 }
 
 // =========================================================
-// MDULO 5: AVALIAO DE DESEMPENHO
+// MÓDULO 5: AVALIAÇÃO DE DESEMPENHO
 // =========================================================
 
-// Ciclo de Avaliao (Ex: 2026.1)
+// Ciclo de Avaliação (Ex: 2026.1)
 model PerformanceCycle {
   id          String   @id @default(uuid())
-  name        String // Ex: 'Avaliao Anual 2026'
+  name        String // Ex: 'Avaliação Anual 2026'
   startDate   DateTime
   endDate     DateTime
   description String?
@@ -425,17 +429,23 @@ model PerformanceCycle {
   status      String   @default("PLANNING") // PLANNING, OPEN, REVIEW, CLOSED
 
   evaluations PerformanceEvaluation[]
+  assignments EvaluationAssignment[] // Atribuições aos gestores
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-// A Avaliao de um Funcionio em um Ciclo
+// A Avaliação de um Funcionário em um Ciclo
 model PerformanceEvaluation {
   id         String @id @default(uuid())
-  employeeId String // Quem est sendo avaliado
+  employeeId String // Quem está sendo avaliado
   cycleId    String // Qual ciclo
-  jobRoleId  String // Cargo no momento da avaliao (snapshot)
+  jobRoleId  String // Cargo no momento da avaliação (snapshot)
+
+  // Gestor Responsável pela Avaliação
+  managerId    String? // ID do gestor responsável
+  managerName  String? // Nome do gestor (cache)
+  managerEmail String? // Email para notificações
 
   status String @default("PENDING") // PENDING, IN_PROGRESS, SUBMITTED, REVIEWED, DONE
 
@@ -448,11 +458,33 @@ model PerformanceEvaluation {
   strengths    String? // Pontos fortes
   improvements String? // Pontos a melhorar
 
+  // Próximos Passos e Recomendações
+  nextSteps        String? // Ações recomendadas
+  trainingNeeds    String? // Treinamentos sugeridos
+  promotionReady   Boolean @default(false) // Pronto para promoção?
+  timeToPromotion  Int?    // Meses estimados para promoção
+  retentionRisk    String? // LOW, MEDIUM, HIGH, CRITICAL
+
+  // Nine Box / Calibration
+  potentialScore      Float?  // Nota de Potencial (0-5 ou 0-100) - Eixo Y do Nine Box
+  calibrationComments String? // Justificativa da calibração
+
+  // Controle de Notificações
+  lastEmailSentAt  DateTime? // Última vez que o email foi enviado ao gestor
+  emailStatus      String?   @default("PENDING") // PENDING, SENT, FAILED, RESENT
+
+  // Envio de Resultado
+  sentToEmployee   Boolean   @default(false)
+  sentAt           DateTime?
+  employeeViewed   Boolean   @default(false)
+  employeeViewedAt DateTime?
+
   employee Employee         @relation(fields: [employeeId], references: [id])
   cycle    PerformanceCycle @relation(fields: [cycleId], references: [id])
   jobRole  JobRole          @relation(fields: [jobRoleId], references: [id])
 
-  items EvaluationItem[]
+  items      EvaluationItem[]
+  assignment EvaluationAssignment?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -460,24 +492,57 @@ model PerformanceEvaluation {
   @@unique([employeeId, cycleId])
 }
 
-// Nota em cada item (Competcia ou Meta)
+// Nota em cada item (Competência ou Meta)
 model EvaluationItem {
   id           String @id @default(uuid())
   evaluationId String
 
   type String // COMPETENCY, GOAL, VALUES
 
-  // Se for competcia
+  // Se for competência
   competencyId      String?
-  competencyLevelId String? // Nel Esperado (Snapshot)
+  competencyLevelId String? // Nível Esperado (Snapshot)
 
   weight Int @default(1)
 
-  score    Float? // Nota dada (1-5)
-  comments String? // Comentio especico do item
+  // Notas (1-5)
+  selfScore    Float? // Autoavaliação do colaborador
+  managerScore Float? // Avaliação do gestor
+  score        Float? // Nota final consolidada
+
+  comments        String? // Comentário do gestor
+  selfComments    String? // Comentário do colaborador (autoavaliação)
 
   evaluation PerformanceEvaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
   competency Competency?           @relation(fields: [competencyId], references: [id])
+}
+
+// Atribuição de Avaliação ao Gestor (Portal Externo)
+model EvaluationAssignment {
+  id           String @id @default(uuid())
+  cycleId      String
+  evaluationId String @unique
+
+  // Gestor Responsável
+  managerName  String // Nome do gestor
+  managerEmail String // Email do gestor
+  managerId    String? // ID interno (se existir no sistema)
+
+  // Token de Acesso (para portal externo)
+  accessToken  String  @unique @default(uuid())
+  tokenExpires DateTime
+
+  // Status
+  status       String   @default("PENDING") // PENDING, STARTED, COMPLETED
+  startedAt    DateTime?
+  completedAt  DateTime?
+
+  // Relacionamentos
+  cycle      PerformanceCycle      @relation(fields: [cycleId], references: [id])
+  evaluation PerformanceEvaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // =========================================================

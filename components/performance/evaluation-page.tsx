@@ -8,16 +8,22 @@ import { Label } from '@/components/ui/label';
 import {
     ArrowLeft, Save, Loader2, Star, CheckCircle2, User, Briefcase,
     Calendar, TrendingUp, Award, MessageSquare, Send, ChevronRight,
-    Target, Sparkles, AlertCircle
+    Target, Sparkles, AlertCircle, BarChart3, UserCheck
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { saveEvaluationScores, submitEvaluation, finalizeEvaluation } from '@/app/actions/performance';
+import { EvaluationInsightsPanel } from './evaluation-insights-panel';
+import { EvaluationAnalyticsPanel } from './evaluation-analytics-panel';
+import { ManagerAssignmentDialog } from './manager-assignment-dialog';
+import { EvaluationFeedbackModal } from './evaluation-feedback-modal';
 
 interface Props {
     evaluation: any;
 }
 
 export function EvaluationPage({ evaluation }: Props) {
+    const router = useRouter();
     const [items, setItems] = useState(evaluation.items);
     const [feedback, setFeedback] = useState({
         general: evaluation.feedback || '',
@@ -27,6 +33,8 @@ export function EvaluationPage({ evaluation }: Props) {
     const [saving, setSaving] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
+    const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
+    const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
 
     const handleScoreChange = (itemId: string, score: number) => {
         setItems((prev: any[]) =>
@@ -246,8 +254,8 @@ export function EvaluationPage({ evaluation }: Props) {
                                                             onClick={() => canEdit && handleScoreChange(item.id, star)}
                                                             disabled={!canEdit}
                                                             className={`p-1.5 rounded-lg transition-all ${canEdit ? 'hover:scale-110' : ''} ${(item.score || 0) >= star
-                                                                    ? 'text-amber-400'
-                                                                    : 'text-slate-200'
+                                                                ? 'text-amber-400'
+                                                                : 'text-slate-200'
                                                                 }`}
                                                         >
                                                             <Star className="w-7 h-7 fill-current" />
@@ -376,24 +384,55 @@ export function EvaluationPage({ evaluation }: Props) {
                             </div>
                         </Card>
 
-                        {/* Ciclo */}
+                        {/* Ciclo e Gestor */}
                         <Card className="p-6 bg-white border-0 shadow-lg">
                             <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
                                 <Calendar className="w-5 h-5 text-rose-600" />
-                                Ciclo
+                                Detalhes da Avaliação
                             </h3>
-                            <div className="space-y-3 text-sm">
-                                <div className="flex justify-between">
-                                    <span className="text-slate-500">Nome</span>
-                                    <span className="font-medium text-slate-800">{evaluation.cycle.name}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-slate-500">Período</span>
-                                    <span className="font-medium text-slate-800">
-                                        {new Date(evaluation.cycle.startDate).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}
-                                        {' - '}
-                                        {new Date(evaluation.cycle.endDate).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}
+                            <div className="space-y-4 text-sm">
+                                <div>
+                                    <span className="block text-slate-500 mb-1">Ciclo</span>
+                                    <div className="flex justify-between items-center">
+                                        <span className="font-medium text-slate-800">{evaluation.cycle.name}</span>
+                                    </div>
+                                    <span className="text-xs text-slate-500 block mt-1">
+                                        {new Date(evaluation.cycle.startDate).toLocaleDateString('pt-BR')} - {new Date(evaluation.cycle.endDate).toLocaleDateString('pt-BR')}
                                     </span>
+                                </div>
+
+                                <div className="border-t pt-4">
+                                    <span className="block text-slate-500 mb-2">Gestor Responsável</span>
+                                    {evaluation.managerName ? (
+                                        <div className="mb-3">
+                                            <div className="flex items-center gap-2 font-medium text-slate-800">
+                                                <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-600">
+                                                    {evaluation.managerName.charAt(0)}
+                                                </div>
+                                                {evaluation.managerName}
+                                            </div>
+                                            {evaluation.managerEmail && (
+                                                <p className="text-xs text-slate-500 mt-0.5 ml-8">{evaluation.managerEmail}</p>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="p-2 bg-amber-50 text-amber-700 rounded-lg text-xs mb-3 flex items-center gap-2">
+                                            <AlertCircle className="w-3 h-3" />
+                                            Nenhum gestor atribuído
+                                        </div>
+                                    )}
+
+                                    {canEdit && (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="w-full text-xs"
+                                            onClick={() => setAssignmentDialogOpen(true)}
+                                        >
+                                            <UserCheck className="w-3 h-3 mr-2" />
+                                            {evaluation.managerName ? 'Alterar Gestor' : 'Atribuir Gestor'}
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
                         </Card>
@@ -490,9 +529,58 @@ export function EvaluationPage({ evaluation }: Props) {
                                 </Button>
                             </Card>
                         )}
+
+                        {/* Painel de Insights e Gráficos */}
+                        {evaluation.finalScore !== null && (
+                            <>
+                                <div className="border-t pt-6 mt-2">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                                            <BarChart3 className="w-5 h-5 text-blue-600" />
+                                            Análise e Insights
+                                        </h3>
+                                        <Button
+                                            onClick={() => setFeedbackModalOpen(true)}
+                                            className="bg-purple-600 hover:bg-purple-700 text-white"
+                                        >
+                                            <MessageSquare className="w-4 h-4 mr-2" />
+                                            Ver Feedback Detalhado
+                                        </Button>
+                                    </div>
+                                </div>
+                                <EvaluationInsightsPanel
+                                    evaluationId={evaluation.id}
+                                    employeeId={evaluation.employee.id}
+                                    employeeName={evaluation.employee.name}
+                                    finalScore={evaluation.finalScore}
+                                    status={evaluation.status}
+                                />
+                            </>
+                        )}
+
+                        {/* Painel de Análise com Gráficos */}
+                        <EvaluationAnalyticsPanel
+                            evaluationId={evaluation.id}
+                            employeeId={evaluation.employee.id}
+                            currentItems={items}
+                            currentScore={averageScore || 0}
+                        />
                     </div>
                 </div>
             </div>
+            <ManagerAssignmentDialog
+                evaluationId={evaluation.id}
+                employeeName={evaluation.employee.name}
+                isOpen={assignmentDialogOpen}
+                onClose={() => setAssignmentDialogOpen(false)}
+                onAssigned={() => router.refresh()}
+            />
+            <EvaluationFeedbackModal
+                evaluation={evaluation}
+                isOpen={feedbackModalOpen}
+                onClose={() => setFeedbackModalOpen(false)}
+                canEdit={canEdit}
+            />
         </div>
     );
 }
